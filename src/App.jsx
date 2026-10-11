@@ -1,4 +1,5 @@
 
+
 import { useState } from 'react'
 import './App.css'
 
@@ -27,7 +28,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `http://localhost:8080/api/ai/${endpoint}`,
+        `https://eduai-e6cq.onrender.com/api/ai/${endpoint}`
         {
           method: 'POST',
           headers: {
