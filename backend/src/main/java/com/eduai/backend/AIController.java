@@ -75,7 +75,7 @@ public class AIController {
         );
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "llama-3.3-70b-versatile");
+       body.put("model", "openai/gpt-oss-120b");
         body.put("messages", List.of(message));
         body.put("stream", false);
         body.put("max_tokens", 700);
