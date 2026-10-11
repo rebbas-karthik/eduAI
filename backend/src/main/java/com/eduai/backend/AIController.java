@@ -1,6 +1,10 @@
 
 package com.eduai.backend;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -9,13 +13,16 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-
-import java.util.Map;
+import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/ai")
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {
+    "http://localhost:5173",
+    "https://edu-ai-steel.vercel.app"
+})
 public class AIController {
 
     private final RestTemplate restTemplate = new RestTemplate();
@@ -26,7 +33,7 @@ public class AIController {
 
         String answer = request.getOrDefault("answer", "");
 
-        return askOllama(
+        return askAI(
             "Evaluate this student's answer. Explain what is correct, " +
             "what is missing, and how to improve it. Give a score out of 10.\n\n" +
             "Student answer: " + answer
@@ -39,34 +46,70 @@ public class AIController {
 
         String answer = request.getOrDefault("answer", "");
 
-        return askOllama(
+        return askAI(
             "Summarize the following text into clear, concise study notes " +
             "for a college student. Use bullet points where appropriate.\n\n" +
             "Text: " + answer
         );
     }
 
-    private Map<String, Object> askOllama(String prompt) {
-        String url = "http://localhost:11434/api/generate";
+    private Map<String, Object> askAI(String prompt) {
+
+        String token = System.getenv("HF_TOKEN");
+
+        if (token == null || token.isBlank()) {
+            throw new IllegalStateException(
+                "HF_TOKEN is missing from the backend environment."
+            );
+        }
+
+        String url =
+            "https://router.huggingface.co/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
 
-        Map<String, Object> body = Map.of(
-            "model", "llama3.2:3b",
-            "prompt", prompt,
-            "stream", false
+        Map<String, Object> message = Map.of(
+            "role", "user",
+            "content", prompt
         );
 
+        Map<String, Object> body = new HashMap<>();
+        body.put("model", "openai/gpt-oss-120b:fastest");
+        body.put("messages", List.of(message));
+        body.put("stream", false);
+        body.put("max_tokens", 700);
+
         HttpEntity<Map<String, Object>> entity =
-                new HttpEntity<>(body, headers);
+            new HttpEntity<>(body, headers);
 
-        Map response = restTemplate.postForObject(
-                url, entity, Map.class);
+        ResponseEntity<Map> response = restTemplate.exchange(
+            url,
+            HttpMethod.POST,
+            entity,
+            Map.class
+        );
 
-        String result = response == null
-                ? "No response received from Ollama."
-                : String.valueOf(response.get("response"));
+        Map responseBody = response.getBody();
+
+        if (responseBody == null) {
+            throw new IllegalStateException(
+                "No response received from the hosted AI service."
+            );
+        }
+
+        List choices = (List) responseBody.get("choices");
+
+        if (choices == null || choices.isEmpty()) {
+            throw new IllegalStateException(
+                "The hosted AI service returned no answer."
+            );
+        }
+
+        Map choice = (Map) choices.get(0);
+        Map messageResponse = (Map) choice.get("message");
+        String result = String.valueOf(messageResponse.get("content"));
 
         return Map.of("result", result);
     }
