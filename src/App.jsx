@@ -27,16 +27,17 @@ function App() {
     setResult('')
 
     try {
-      const response = await fetch(
-        `https://eduai-e6cq.onrender.com/api/ai/${endpoint}`
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ answer: answer.trim() }),
-        }
-      )
+     const response = await fetch(
+  `https://eduai-e6cq.onrender.com/api/ai/${endpoint}`,
+  {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ answer: answer.trim() }),
+  }
+)
+
 
       if (!response.ok) {
         throw new Error(`Backend error: ${response.status}`)
