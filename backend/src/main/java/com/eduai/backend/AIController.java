@@ -5,17 +5,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 
 @RestController
 @RequestMapping("/api/ai")
@@ -55,16 +55,15 @@ public class AIController {
 
     private Map<String, Object> askAI(String prompt) {
 
-        String token = System.getenv("HF_TOKEN");
+        String token = System.getenv("GROQ_API_KEY");
 
         if (token == null || token.isBlank()) {
             throw new IllegalStateException(
-                "HF_TOKEN is missing from the backend environment."
+                "GROQ_API_KEY is missing from the backend environment."
             );
         }
 
-        String url =
-            "https://router.huggingface.co/v1/chat/completions";
+        String url = "https://api.groq.com/openai/v1/chat/completions";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
@@ -76,7 +75,7 @@ public class AIController {
         );
 
         Map<String, Object> body = new HashMap<>();
-        body.put("model", "openai/gpt-oss-120b:fastest");
+        body.put("model", "llama-3.3-70b-versatile");
         body.put("messages", List.of(message));
         body.put("stream", false);
         body.put("max_tokens", 700);
@@ -95,7 +94,7 @@ public class AIController {
 
         if (responseBody == null) {
             throw new IllegalStateException(
-                "No response received from the hosted AI service."
+                "No response received from Groq."
             );
         }
 
@@ -103,7 +102,7 @@ public class AIController {
 
         if (choices == null || choices.isEmpty()) {
             throw new IllegalStateException(
-                "The hosted AI service returned no answer."
+                "Groq returned no answer."
             );
         }
 
